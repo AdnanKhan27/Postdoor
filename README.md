@@ -8,6 +8,11 @@
                                                                     
 </pre>                                                           
 
+## Disclaimer!!
+This project is only for **educational purposes** only. 
+
 ## Description
 
 ## ScreenShots
+
+## How to Use?
